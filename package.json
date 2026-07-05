@@ -1,0 +1,16 @@
+{
+  "name": "land-house-budget-planner",
+  "version": "1.0.0",
+  "description": "AI-Based Smart House Construction Budget Planning System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  },
+  "author": "Antigravity",
+  "license": "ISC"
+}
