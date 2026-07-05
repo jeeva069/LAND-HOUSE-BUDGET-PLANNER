@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Land & House Budget Planning Agent</title>
+  <meta name="description" content="An interactive tool to estimate, evaluate, and manage the total cost of buying land and constructing a house. Check your budget status and plan your savings.">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Chart.js CDN for interactive charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Three.js CDN for 3D Visualizer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Three.js OrbitControls -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-title-container">
+        <div class="header-logo">
+          <i data-lucide="home"></i>
+        </div>
+        <div>
+          <h1 class="app-title">Land & House Budget Planner</h1>
+          <p class="app-subtitle">Estimate, evaluate, and optimize your home building budget</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-reset" class="btn btn-secondary btn-sm" title="Reset all figures to defaults">
+          <i data-lucide="rotate-ccw"></i> Reset
+        </button>
+        <button id="btn-print" class="btn btn-primary btn-sm" title="Print or Save PDF report">
+          <i data-lucide="printer"></i> Export PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Grid Layout -->
+    <main class="grid-layout">
+      
+      <!-- Left Column: Inputs -->
+      <aside class="sidebar">
+        
+        <!-- Section 1: Land Details -->
+        <section class="card">
+          <h2 class="card-title"><i data-lucide="map"></i> Land Details</h2>
+          <div class="form-section">
+            
+            <div class="form-group">
+              <label>Land Size Unit</label>
+              <div class="unit-toggle-container" id="land-unit-toggle">
+                <div class="toggle-option active" data-unit="sqft">Sq. Ft</div>
+                <div class="toggle-option" data-unit="acres">Acres</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="input-label-row">
+                <label id="lbl-land-size" for="inp-land-size">Land Size</label>
+                <span class="label-hint" id="hint-land-size"></span>
+              </div>
+              <input type="number" id="inp-land-size" value="2000" min="0" step="any">
+            </div>
+
+            <div class="form-group">
+              <div class="checkbox-group" style="padding: 0; border: none; background: none; margin-bottom: 0.5rem;">
+                <input type="checkbox" id="chk-land-total-price">
+                <label for="chk-land-total-price" style="cursor: pointer; color: var(--text-secondary);">Enter total land price directly</label>
+              </div>
+              <div class="input-with-addon">
+                <input type="number" id="inp-land-price-rate" value="150" min="0">
+                <span class="input-addon" id="addon-land-price">/ Sq.Ft</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="input-label-row">
+                <label for="inp-registration-rate">Registration & Legal Rate</label>
+                <span class="label-hint" id="val-registration-percent">8%</span>
+              </div>
+              <div class="slider-container">
+                <input type="range" id="inp-registration-rate" min="0" max="15" step="0.5" value="8">
+                <div class="gauge-labels">
+                  <span>0%</span>
+                  <span>15%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="input-label-row">
+                <label for="inp-registration-override">Manual Registration Cost</label>
+                <span class="label-hint" id="val-registration-override-status" style="color: var(--color-ok);">Auto</span>
+              </div>
+              <input type="number" id="inp-registration-override" placeholder="Override amount (₹)" min="0">
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Section 2: Construction Details -->
+        <section class="card">
+          <h2 class="card-title"><i data-lucide="hammer"></i> Construction Specs</h2>
+          <div class="form-section">
+
+            <div class="form-group">
+              <label for="sel-home-type">Home Type</label>
+              <select id="sel-home-type">
+                <option value="single">Single Room (Factor: 1.0)</option>
+                <option value="double" selected>Double Room (Factor: 1.8)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <div class="input-label-row">
+                <label for="inp-construction-area">Build Area (Sq. Ft)</label>
+              </div>
+              <input type="number" id="inp-construction-area" value="1500" min="0">
+            </div>
+
+            <div class="form-group">
+              <div class="input-label-row">
+                <label for="inp-construction-rate">Cost per Sq. Ft</label>
+              </div>
+              <div class="input-with-addon">
+                <input type="number" id="inp-construction-rate" value="1800" min="0">
+                <span class="input-addon">/ Sq.Ft</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="input-label-row">
+                <label for="inp-time-limit">Time Limit (Months)</label>
+                <span class="label-hint" id="val-time-limit">8 Months</span>
+              </div>
+              <div class="slider-container">
+                <input type="range" id="inp-time-limit" min="1" max="24" value="8">
+                <div class="gauge-labels">
+                  <span>1m</span>
+                  <span>24m</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="input-label-row">
+                <label for="inp-employee-salary" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                  <span>Employee Salary</span>
+                  <select id="sel-employee-salary-type" style="padding: 2px 4px; font-size: 0.75rem; border-radius: 4px; width: auto; background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.1);">
+                    <option value="monthly" selected>Monthly</option>
+                    <option value="total">Total</option>
+                  </select>
+                </label>
+              </div>
+              <input type="number" id="inp-employee-salary" value="25000" min="0">
+            </div>
+
+            <div class="form-group">
+              <div class="input-label-row">
+                <label for="inp-engineer-salary" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                  <span>Engineer Salary</span>
+                  <select id="sel-engineer-salary-type" style="padding: 2px 4px; font-size: 0.75rem; border-radius: 4px; width: auto; background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.1);">
+                    <option value="monthly" selected>Monthly</option>
+                    <option value="total">Total</option>
+                  </select>
+                </label>
+              </div>
+              <input type="number" id="inp-engineer-salary" value="45000" min="0">
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Section 3: Materials Quality Selection -->
+        <section class="card">
+          <h2 class="card-title"><i data-lucide="layers"></i> Materials Quality</h2>
+          <p class="label-hint" style="margin-top: -0.5rem; margin-bottom: 1rem; font-size: 0.78rem;">Set preferred quality levels. The AI suggestion engine starts from these and downgrades only if budget is tight.</p>
+          <div class="form-section">
+
+            <div class="form-group">
+              <label for="sel-wood-level">Wood Finishes Quality</label>
+              <select id="sel-wood-level">
+                <option value="Low">Low — Economy Grade</option>
+                <option value="Medium" selected>Medium — Standard Grade</option>
+                <option value="High">High — Premium Grade</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="sel-steel-level">Steel Structure Quality</label>
+              <select id="sel-steel-level">
+                <option value="Low">Low — Basic Grade</option>
+                <option value="Medium" selected>Medium — Standard Grade</option>
+                <option value="High">High — High-Tensile Grade</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="sel-sand-level">Sand / Concrete Quality</label>
+              <select id="sel-sand-level">
+                <option value="Low">Low — River Sand Mix</option>
+                <option value="Medium" selected>Medium — M-Sand Standard</option>
+                <option value="High">High — Premium Plastered</option>
+              </select>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Section 4: Budget Details -->
+        <section class="card" style="border-left: 4px solid var(--accent-primary);">
+          <h2 class="card-title" style="color: var(--text-primary);"><i data-lucide="wallet"></i> Total Budget</h2>
+          <div class="form-section">
+            <div class="form-group">
+              <label for="inp-user-budget">Your Max Budget</label>
+              <input type="number" id="inp-user-budget" value="5000000" min="0" style="font-size: 1.25rem; font-weight: 700; border-color: rgba(99, 102, 241, 0.4);">
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 4: Admin Config Panel (Collapsible) -->
+        <section class="card collapsible-card" id="admin-config-card">
+          <h2 class="card-title" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;" id="admin-config-header">
+            <span><i data-lucide="settings"></i> Admin Rates Config</span>
+            <i data-lucide="chevron-down" id="admin-chevron" style="transition: transform var(--transition-fast);"></i>
+          </h2>
+          <div class="form-section collapsible-content" id="admin-content" style="display: none; padding-top: 1rem; border-top: 1px solid var(--border-card); margin-top: 1rem;">
+            
+            <h3 style="font-size: 0.85rem; color: #fff; margin-bottom: 0.25rem;">Wood Rates (₹/Sq.Ft)</h3>
+            <div class="rates-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">Low</label>
+                <input type="number" id="rate-wood-low" value="100" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">Medium</label>
+                <input type="number" id="rate-wood-med" value="200" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">High</label>
+                <input type="number" id="rate-wood-high" value="350" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+            </div>
+
+            <h3 style="font-size: 0.85rem; color: #fff; margin-bottom: 0.25rem;">Steel Rates (₹/Sq.Ft)</h3>
+            <div class="rates-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">Low</label>
+                <input type="number" id="rate-steel-low" value="150" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">Medium</label>
+                <input type="number" id="rate-steel-med" value="300" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">High</label>
+                <input type="number" id="rate-steel-high" value="500" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+            </div>
+
+            <h3 style="font-size: 0.85rem; color: #fff; margin-bottom: 0.25rem;">Sand Rates (₹/Sq.Ft)</h3>
+            <div class="rates-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">Low</label>
+                <input type="number" id="rate-sand-low" value="50" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">Medium</label>
+                <input type="number" id="rate-sand-med" value="100" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">High</label>
+                <input type="number" id="rate-sand-high" value="180" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+            </div>
+
+            <h3 style="font-size: 0.85rem; color: #fff; margin-bottom: 0.25rem;">Cement Rates (₹/Sq.Ft)</h3>
+            <div class="rates-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">Low</label>
+                <input type="number" id="rate-cement-low" value="80" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">Medium</label>
+                <input type="number" id="rate-cement-med" value="160" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">High</label>
+                <input type="number" id="rate-cement-high" value="260" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+            </div>
+
+            <h3 style="font-size: 0.85rem; color: #fff; margin-bottom: 0.25rem;">Bricks Rates (₹/Sq.Ft)</h3>
+            <div class="rates-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">Low</label>
+                <input type="number" id="rate-bricks-low" value="60" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">Medium</label>
+                <input type="number" id="rate-bricks-med" value="120" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">High</label>
+                <input type="number" id="rate-bricks-high" value="200" style="padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+              </div>
+            </div>
+
+            <button id="btn-save-rates" class="btn btn-primary btn-sm" style="width: 100%;">
+              <i data-lucide="save"></i> Save Rates to Server
+            </button>
+          </div>
+        </section>
+
+      </aside>
+
+      <!-- Right Column: Dashboard Results -->
+      <div class="main-content">
+        
+        <!-- Status Banner (Dynamically updated) -->
+        <div id="status-banner" class="status-banner status-ok">
+          <div class="status-info">
+            <div class="status-badge-icon">
+              <i data-lucide="check-circle-2" id="status-icon"></i>
+            </div>
+            <div class="status-text-details">
+              <h3 id="status-title">Budget OK</h3>
+              <p id="status-desc">Your estimated total cost is within your stated budget limit.</p>
+            </div>
+          </div>
+          <div class="status-value">
+            <div class="status-diff-percent" id="status-diff-percent">0%</div>
+            <div class="status-diff-amount" id="status-diff-amount">Difference: $0</div>
+          </div>
+        </div>
+
+        <!-- 3D Visualization Card -->
+        <section class="card blueprint-card">
+          <div class="card-title-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h2 class="card-title" style="margin-bottom: 0;"><i data-lucide="box"></i> 3D House Blueprint Visualizer</h2>
+            <span class="label-hint" id="visualizer-status" style="color: var(--accent-primary); font-weight: 500;">Initializing 3D Canvas...</span>
+          </div>
+          <div id="blueprint-3d-canvas-container" class="blueprint-canvas-container">
+            <!-- Three.js Canvas will be injected here -->
+          </div>
+          <div class="blueprint-controls-legend">
+            <span><i data-lucide="move"></i> Orbit: Left Click + Drag</span>
+            <span><i data-lucide="zoom-in"></i> Zoom: Scroll Wheel</span>
+            <span><i data-lucide="hand"></i> Pan: Right Click + Drag</span>
+          </div>
+        </section>
+
+        <!-- Costs Breakdown & Charts -->
+        <div class="results-grid">
+          
+          <!-- Breakdown Card -->
+          <section class="card">
+            <h2 class="card-title"><i data-lucide="bar-chart-3"></i> Cost Component Breakdown</h2>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Expense Component</th>
+                    <th style="text-align: right;">Amount</th>
+                    <th style="text-align: right;">% of Total</th>
+                  </tr>
+                </thead>
+                <tbody id="breakdown-table-body">
+                  <!-- JS dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Charts Card -->
+          <section class="card gauge-section">
+            <h3 class="card-title" style="margin-bottom: 0.5rem;"><i data-lucide="pie-chart"></i> Visual Shares</h3>
+            <div style="position: relative; width: 100%; max-width: 220px; height: 220px; margin: 0 auto;">
+              <canvas id="cost-donut-chart"></canvas>
+            </div>
+            
+            <div class="gauge-bar-container">
+              <div id="budget-progress-fill" class="gauge-bar-fill"></div>
+              <div id="budget-progress-marker" class="gauge-bar-marker"></div>
+            </div>
+            <div class="gauge-labels">
+              <span>0% Cost</span>
+              <span id="progress-budget-label" style="font-weight: 600;">Budget (100%)</span>
+              <span id="progress-cost-label">0%</span>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- AI Material Suggestions Card -->
+        <section class="card" id="material-suggestions-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+            <h2 class="card-title" style="margin-bottom: 0;">
+              <i data-lucide="cpu"></i> AI Material Suggestions
+            </h2>
+            <div id="material-budget-summary" style="display: flex; gap: 1rem; font-size: 0.8rem;">
+              <span class="label-hint">Fixed Costs: <strong id="mat-fixed-cost" style="color:#fff;">₹0</strong></span>
+              <span class="label-hint">Budget Left: <strong id="mat-remaining-budget" style="color: var(--color-ok);">₹0</strong></span>
+            </div>
+          </div>
+          <p class="label-hint" style="margin-top: -0.75rem; margin-bottom: 1.25rem;">
+            Based on your budget after all fixed costs (land, registration, construction, labor, engineering), the AI recommends quality levels for each material. Structural materials (Steel, Cement) are protected from aggressive downgrades.
+          </p>
+          <div class="materials-grid" id="materials-suggestions-grid">
+            <!-- Dynamically populated by app.js -->
+          </div>
+          <div id="materials-total-row" style="margin-top: 1rem; padding: 0.75rem 1rem; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-card); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.9rem; color: var(--text-secondary);">Total Estimated Materials Cost</span>
+            <span id="mat-total-cost" style="font-size: 1.1rem; font-weight: 700; color: #fff;">₹0</span>
+          </div>
+        </section>
+
+        <!-- Additional Charges Checklist -->
+        <section class="card">
+          <h2 class="card-title"><i data-lucide="plus-circle"></i> Additional Charges & Contingencies</h2>
+          <p class="label-hint" style="margin-top: -0.75rem; margin-bottom: 1.25rem;">Select estimated auxiliary costs to add to the budget.</p>
+          
+          <div class="additional-costs-grid">
+            
+            <label class="checkbox-group" for="chk-cost-interior">
+              <input type="checkbox" id="chk-cost-interior" checked>
+              <div class="checkbox-text-details">
+                <span class="checkbox-label">Interior & Furnishing</span>
+                <span class="checkbox-sub">Est: 15% of Construction</span>
+              </div>
+            </label>
+
+            <label class="checkbox-group" for="chk-cost-boundary">
+              <input type="checkbox" id="chk-cost-boundary" checked>
+              <div class="checkbox-text-details">
+                <span class="checkbox-label">Boundary Wall</span>
+                <span class="checkbox-sub">Est: ₹80,000 flat</span>
+              </div>
+            </label>
+
+            <label class="checkbox-group" for="chk-cost-utility">
+              <input type="checkbox" id="chk-cost-utility" checked>
+              <div class="checkbox-text-details">
+                <span class="checkbox-label">Electricity & Water Connection</span>
+                <span class="checkbox-sub">Est: ₹35,000 flat</span>
+              </div>
+            </label>
+
+            <label class="checkbox-group" for="chk-cost-borewell">
+              <input type="checkbox" id="chk-cost-borewell" checked>
+              <div class="checkbox-text-details">
+                <span class="checkbox-label">Borewell & Water Pump</span>
+                <span class="checkbox-sub">Est: ₹45,000 flat</span>
+              </div>
+            </label>
+
+            <label class="checkbox-group" for="chk-cost-architect">
+              <input type="checkbox" id="chk-cost-architect" checked>
+              <div class="checkbox-text-details">
+                <span class="checkbox-label">Architect & Engineer Fees</span>
+                <span class="checkbox-sub">Est: 6% of Construction</span>
+              </div>
+            </label>
+
+            <label class="checkbox-group" for="chk-cost-contingency">
+              <input type="checkbox" id="chk-cost-contingency" checked>
+              <div class="checkbox-text-details">
+                <span class="checkbox-label">Contingency Fund</span>
+                <span class="checkbox-sub">Est: 5% of Total Cost</span>
+              </div>
+            </label>
+
+            <label class="checkbox-group" for="chk-cost-custom">
+              <input type="checkbox" id="chk-cost-custom">
+              <div class="checkbox-text-details">
+                <span class="checkbox-label">Custom Extra Cost</span>
+                <span class="checkbox-sub">Enter your own amount</span>
+              </div>
+            </label>
+
+          </div>
+
+          <div class="custom-cost-input-wrapper" id="custom-cost-input-container">
+            <div class="form-group" style="margin-top: 1rem; max-width: 300px;">
+              <label for="inp-custom-cost-val">Custom Cost Amount</label>
+              <input type="number" id="inp-custom-cost-val" value="10000" min="0">
+            </div>
+          </div>
+        </section>
+
+        <!-- Cost Optimization section (interactive suggestions when budget exceeded) -->
+        <section class="card" id="optimization-container" style="display: none;">
+          <h2 class="card-title" style="color: var(--color-warn);"><i data-lucide="sparkles"></i> Cost Optimization Simulator</h2>
+          <p class="label-hint" style="margin-top: -0.75rem; margin-bottom: 1.25rem;">Adjust settings to simulate how you can bring your project back under budget.</p>
+          
+          <div id="suggestions-list-box" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; border-bottom: 1px dashed var(--border-card); padding-bottom: 1rem;">
+            <!-- Dynamic suggestions list -->
+          </div>
+
+          <div class="optimization-section">
+            
+            <div class="opt-card">
+              <div class="opt-header">
+                <span class="opt-title">Reduce Construction Footprint</span>
+                <span class="opt-badge">High Impact</span>
+              </div>
+              <p class="opt-desc">Reducing build area saves significantly on materials and labor costs.</p>
+              <div class="opt-interactive-row">
+                <div class="slider-container">
+                  <div class="savings-slider-label">
+                    <span>Current: <strong id="opt-area-current">1,500</strong> sq.ft</span>
+                    <span>Reduce: <strong id="opt-area-reduction-val">0%</strong></span>
+                  </div>
+                  <input type="range" id="inp-opt-area-reduction" min="0" max="30" step="5" value="0">
+                </div>
+                <div class="opt-saving-badge" id="opt-area-savings">Saving: $0</div>
+              </div>
+            </div>
+
+            <div class="opt-card">
+              <div class="opt-header">
+                <span class="opt-title">Optimize Material Finishes</span>
+                <span class="opt-badge">Medium Impact</span>
+              </div>
+              <p class="opt-desc">Opting for standard finishes over ultra-premium fixtures saves cost per sq.ft.</p>
+              <div class="opt-interactive-row">
+                <div class="slider-container">
+                  <div class="savings-slider-label">
+                    <span>Quality Level</span>
+                    <span>Selected: <strong id="opt-quality-val">Premium (As Input)</strong></span>
+                  </div>
+                  <input type="range" id="inp-opt-quality" min="0" max="2" step="1" value="2">
+                  <div class="gauge-labels">
+                    <span>Standard (-15%)</span>
+                    <span>Semi-Premium (-8%)</span>
+                    <span>Premium (0%)</span>
+                  </div>
+                </div>
+                <div class="opt-saving-badge" id="opt-quality-savings">Saving: $0</div>
+              </div>
+            </div>
+
+            <!-- Dynamic Optimized Status Banner -->
+            <div id="optimized-total-banner" class="status-banner" style="margin-top: 0.5rem; display: none;">
+              <div class="status-info">
+                <div class="status-badge-icon" style="background: rgba(255,255,255,0.15);">
+                  <i data-lucide="sparkles" style="color: currentColor;"></i>
+                </div>
+                <div class="status-text-details">
+                  <h3 id="opt-status-title">Optimized Total</h3>
+                  <p id="opt-status-desc">Applying these modifications changes your standings.</p>
+                </div>
+              </div>
+              <div class="status-value">
+                <div class="status-diff-percent" id="opt-status-total">$0</div>
+                <div class="status-diff-amount" id="opt-status-diff">Surplus: $0</div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Savings Plan & Loan Planner (Shown when status is 🟡 or 🔴) -->
+        <section class="card" id="savings-loan-container" style="display: none;">
+          <h2 class="card-title"><i data-lucide="calculator"></i> Shortfall & Finance Planner</h2>
+          
+          <div class="planner-grid">
+            
+            <!-- Savings Plan -->
+            <div style="display: flex; flex-direction: column; justify-content: space-between;">
+              <div class="savings-shortfall-box">
+                <div class="savings-shortfall-title">Budget Shortfall</div>
+                <div class="savings-shortfall-value" id="savings-shortfall-val">$0</div>
+                <p class="label-hint" style="margin-top: -0.5rem;">Amount needed to cover the project cost.</p>
+              </div>
+
+              <div class="form-group" style="margin-top: 1.25rem;">
+                <div class="savings-slider-label">
+                  <label for="inp-savings-timeline">Savings Timeline</label>
+                  <span style="font-weight: 600; color: #fff;" id="val-savings-months">24 Months</span>
+                </div>
+                <input type="range" id="inp-savings-timeline" min="6" max="48" step="6" value="24">
+                <div class="gauge-labels">
+                  <span>6m</span>
+                  <span>48m</span>
+                </div>
+              </div>
+
+              <div class="savings-result">
+                <div class="label-hint">Required Monthly Savings</div>
+                <div class="savings-result-value" id="savings-monthly-target">$0 / mo</div>
+                <p class="label-hint" style="font-size: 0.7rem; margin-top: 0.25rem;">For example, via high-yield recurring deposits or SIPs.</p>
+              </div>
+            </div>
+
+            <!-- Loan & EMI Estimator -->
+            <div style="border-left: 1px solid var(--border-card); padding-left: 1.5rem;">
+              <h3 style="font-size: 1rem; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="percent" style="font-size: 1.1rem; color: var(--accent-primary);"></i> Construction Loan Estimate
+              </h3>
+              
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="inp-loan-amount">Desired Loan Amount</label>
+                <input type="number" id="inp-loan-amount" value="50000" min="0">
+              </div>
+
+              <div class="loan-input-grid">
+                <div class="form-group">
+                  <div class="savings-slider-label">
+                    <label for="inp-loan-rate">Interest Rate</label>
+                    <span style="color: #fff; font-weight: 600;" id="val-loan-rate">7.5%</span>
+                  </div>
+                  <input type="range" id="inp-loan-rate" min="3" max="15" step="0.1" value="7.5">
+                </div>
+
+                <div class="form-group">
+                  <div class="savings-slider-label">
+                    <label for="inp-loan-tenure">Tenure</label>
+                    <span style="color: #fff; font-weight: 600;" id="val-loan-tenure">15 Years</span>
+                  </div>
+                  <input type="range" id="inp-loan-tenure" min="5" max="30" step="1" value="15">
+                </div>
+              </div>
+
+              <div class="loan-result-box">
+                <div>
+                  <div class="loan-result-label">Estimated Monthly EMI</div>
+                  <p class="label-hint" style="font-size: 0.7rem; margin-top: 0.15rem;">Approx. calculation (PMT formula)</p>
+                </div>
+                <div class="loan-result-val" id="loan-emi-val">$0</div>
+              </div>
+              
+              <p class="label-hint" style="font-size: 0.65rem; text-align: center; margin-top: 0.75rem;">
+                *Disclaimer: This estimation does not constitute financial advice. Actual loan terms vary by lender.
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Save/Load Project Profiles -->
+        <section class="card">
+          <h2 class="card-title"><i data-lucide="folder-heart"></i> Save & Load Budget Profiles</h2>
+          <div class="planner-grid">
+            <div style="display: flex; flex-direction: column; gap: 1rem; border-right: 1px solid var(--border-card); padding-right: 1.5rem;">
+              <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.25rem;">Save Current Configuration</h3>
+              <div class="form-group">
+                <label for="inp-project-name">Profile Name</label>
+                <input type="text" id="inp-project-name" placeholder="e.g. My Budget Plan 1">
+              </div>
+              <button id="btn-save-project" class="btn btn-primary">
+                <i data-lucide="save"></i> Save Profile
+              </button>
+            </div>
+            <div style="padding-left: 0.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+              <h3 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.75rem;">Saved Profiles (Syncs to Local & Server)</h3>
+              <div id="saved-projects-list" class="saved-projects-list">
+                <!-- JS dynamically populated -->
+                <span class="label-hint">No saved profiles found.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Bottom Footer -->
+    <footer class="app-footer">
+      <div>
+        <span>Land & House Budget Planning Agent &copy; 2026</span>
+      </div>
+      <div>
+        <span style="opacity: 0.6;">Interactive Estimates &bull; Double check rates locally</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
