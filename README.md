@@ -16,7 +16,7 @@ blueprint visualization examples
 ## Demo / Project URL
 
 **Live Demo:**\
-https://your-project-demo.vercel.app
+https://landhousebudgetplanner.netlify.app/
 
 **GitHub Repository:**\
 https://github.com/yourusername/AI-Smart-House-Budget-Planner
